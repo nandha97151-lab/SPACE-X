@@ -26,12 +26,8 @@ export const INITIAL_BUSINESS_PROFILE = {
   },
   paymentMethods: ["UPI (GPay / PhonePe / Paytm)", "Cash on Delivery", "Credit / Debit Cards", "Net Banking"],
   supportedLanguages: [
-    { code: "ta-IN", name: "Tamil", label: "தமிழ்", flag: "🇮🇳" },
-    { code: "en-IN", name: "English", label: "English", flag: "🌐" },
-    { code: "hi-IN", name: "Hindi", label: "हिन्दी", flag: "🇮🇳" },
-    { code: "te-IN", name: "Telugu", label: "తెలుగు", flag: "🇮🇳" },
-    { code: "ml-IN", name: "Malayalam", label: "മലയാളം", flag: "🇮🇳" },
-    { code: "kn-IN", name: "Kannada", label: "ಕನ್ನಡ", flag: "🇮🇳" }
+    { code: "en-IN", name: "English", label: "English", flag: "🇮🇳" },
+    { code: "ta-IN", name: "Tamil", label: "தமிழ்", flag: "🇮🇳" }
   ]
 };
 
@@ -600,6 +596,69 @@ export const INITIAL_PRODUCTS = [
 
   // GROCERY & DAILY ESSENTIALS
   {
+    id: "PROD-GR-RICE01",
+    name: "Premium Ponni Rice (1 Kg)",
+    category: "Grocery",
+    price: 120,
+    originalPrice: 150,
+    rating: 4.6,
+    reviewsCount: 380,
+    stock: 60,
+    inStock: true,
+    brand: "Cauvery Farm",
+    sizes: ["1 Kg", "5 Kg"],
+    colors: ["White"],
+    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&auto=format&fit=crop&q=80",
+    description: "High quality premium Ponni boiled rice, aged for 12 months for soft and fluffy cooking.",
+    translations: {
+      ta: "பிரீமியம் பொன்னி அரிசி (1 கிலோ), சிறந்த தரம் மற்றும் சுவை.",
+      en: "Premium Ponni Boiled Rice (1 Kg), top quality and texture."
+    },
+    keywords: ["rice", "premium rice", "ponni rice", "arisi", "அரிசி", "நல்ல அரிசி", "quality rice"]
+  },
+  {
+    id: "PROD-GR-RICE02",
+    name: "Organic Brown Rice (1 Kg)",
+    category: "Grocery",
+    price: 145,
+    originalPrice: 180,
+    rating: 4.7,
+    reviewsCount: 290,
+    stock: 40,
+    inStock: true,
+    brand: "Organic India",
+    sizes: ["1 Kg", "2 Kg"],
+    colors: ["Brown"],
+    image: "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=600&auto=format&fit=crop&q=80",
+    description: "100% certified organic unpolished brown rice packed with dietary fiber and essential nutrients.",
+    translations: {
+      ta: "இயற்கை பிரவுன் அரிசி (1 கிலோ), சத்துக்கள் நிறைந்த ஆரோக்கியமான அரிசி.",
+      en: "Certified Organic Brown Rice (1 Kg), rich in fiber and minerals."
+    },
+    keywords: ["rice", "organic rice", "brown rice", "arisi", "அரிசி", "ஆர்கானிக் அரிசி", "quality rice"]
+  },
+  {
+    id: "PROD-GR-RICE03",
+    name: "Royal Basmati Rice (1 Kg)",
+    category: "Grocery",
+    price: 160,
+    originalPrice: 210,
+    rating: 4.5,
+    reviewsCount: 450,
+    stock: 45,
+    inStock: true,
+    brand: "India Gate",
+    sizes: ["1 Kg", "5 Kg"],
+    colors: ["Pearl White"],
+    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&auto=format&fit=crop&q=80",
+    description: "Extra long grain royal aromatic basmati rice for fragrant biryani and pulao.",
+    translations: {
+      ta: "ராயல் பாஸ்மதி அரிசி (1 கிலோ), பிரியாணி மற்றும் புலாவ் செய்ய சிறந்த நறுமணம் கொண்ட அரிசி.",
+      en: "Royal Long Grain Basmati Rice (1 Kg), aromatic and slender."
+    },
+    keywords: ["rice", "basmati rice", "arisi", "பாஸ்மதி அரிசி", "அரிசி", "biryani rice"]
+  },
+  {
     id: "PROD-GR01",
     name: "Ponni Boiled Rice Premium Grade (5 Kg)",
     category: "Grocery",
@@ -616,12 +675,9 @@ export const INITIAL_PRODUCTS = [
     description: "Aged premium Tanjore Ponni boiled rice, smooth texture and rich aroma.",
     translations: {
       ta: "தஞ்சாவூர் பொன்னி புழுங்கல் அரிசி (5 கிலோ), மிகச் சிறந்த தரம்.",
-      hi: "प्रीमियम पोन्नी उबले हुए चावल (5 किलो), दैनिक भोजन के लिए उत्तम।",
-      te: "ప్రీమియం పొన్ని ఉప్పుడు బియ్యం (5 కిలోలు).",
-      ml: "തഞ്ചാവൂർ പൊന്നി പുഴുക്കലരി (5 കിലോഗ്രാം).",
-      kn: "ಪ್ರೀಮಿಯಂ ಪೊನ್ನಿ ಕುಚುಲಕ್ಕಿ (5 ಕೆಜಿ)."
+      en: "Premium aged Tanjore Ponni boiled rice (5 Kg), soft texture."
     },
-    keywords: ["rice", "ponni rice", "boiled rice", "arisi", "அரிசி", "பொன்னி அரிசி", "चावल", "पोन्नी चावल"]
+    keywords: ["rice", "ponni rice", "boiled rice", "arisi", "அரிசி", "பொன்னி அரிசி"]
   },
   {
     id: "PROD-GR02",
@@ -787,12 +843,13 @@ export const STORE_POLICIES_FAQ = [
 ];
 
 export const SAMPLE_DEMO_QUERIES = [
-  { text: "Show me wireless headphones under 3000 rupees", lang: "en-IN", label: "Headphones under ₹3,000 (English)" },
-  { text: "Enakku 3000 budget la nalla wireless headphones venum", lang: "ta-IN", label: "Wireless Headphones under ₹3,000 (Tanglish)" },
-  { text: "எனக்கு 3000 ரூபாய்க்குள் நல்ல wireless headphones வேண்டும்", lang: "ta-IN", label: "Wireless Headphones under ₹3,000 (Tamil)" },
-  { text: "Mujhe 3000 rupaye ke andar achhe wireless headphones chahiye", lang: "hi-IN", label: "Wireless Headphones under ₹3,000 (Hindi)" },
-  { text: "I need a phone for photography and gaming under 25000", lang: "en-IN", label: "Phone for photography under ₹25k (Goal AI)" },
-  { text: "Enakku college use ku oru laptop venum. Budget 60000", lang: "ta-IN", label: "College Laptop under ₹60,000 (Tanglish)" }
+  { text: "வணக்கம்", query: "வணக்கம்", lang: "ta-IN", languageLabel: "தமிழ்", intent: "GENERAL_CONVERSATION", meaning: "Greeting: 'வணக்கம்! எப்படி உதவலாம்?'" },
+  { text: "எனக்கு அரிசி வேண்டும்", query: "எனக்கு அரிசி வேண்டும்", lang: "ta-IN", languageLabel: "தமிழ்", intent: "PRODUCT_SEARCH", meaning: "Rice products (Ponni, Organic, Basmati)" },
+  { text: "இந்த பொருளின் விலை என்ன?", query: "இந்த பொருளின் விலை என்ன?", lang: "ta-IN", languageLabel: "தமிழ்", intent: "PRODUCT_PRICE", meaning: "Product price inquiry" },
+  { text: "எனக்கு red shirt வேண்டும்", query: "எனக்கு red shirt வேண்டும்", lang: "ta-IN", languageLabel: "தமிழ்", intent: "PRODUCT_SEARCH", meaning: "Red shirts under ₹500" },
+  { text: "இந்த கடை எங்கே இருக்கு?", query: "இந்த கடை எங்கே இருக்கு?", lang: "ta-IN", languageLabel: "தமிழ்", intent: "BUSINESS_INFORMATION", meaning: "Store address, hours & phone card" },
+  { text: "I need rice", query: "I need rice", lang: "en-IN", languageLabel: "English", intent: "PRODUCT_SEARCH", meaning: "English query for rice products" },
+  { text: "enakku rice venum", query: "enakku rice venum", lang: "ta-IN", languageLabel: "தமிழ் (Tanglish)", intent: "PRODUCT_SEARCH", meaning: "Tanglish query for rice products" }
 ];
 
 export const DEMO_PRESET_QUERIES = SAMPLE_DEMO_QUERIES;

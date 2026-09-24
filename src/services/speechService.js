@@ -1,11 +1,147 @@
 // VOICEMART AI - Web Speech API & MediaRecorder Audio Service (STT, TTS, Audio Recording)
-// Production-grade resilient speech recognition engine with detailed console debugging
+// Production-grade resilient speech recognition engine — Tamil (ta-IN) first-class support
+// Debug logging: [VOICE] [STT] [TTS] [LANGUAGE] [AI]
 
+// ─────────────────────────────────────────────────────────────────
+// LANGUAGE CONFIG — BCP-47 codes, TTS voice hints, STT labels
+// ─────────────────────────────────────────────────────────────────
+export const LANGUAGE_CONFIG = {
+  'ta-IN': {
+    name: 'Tamil',
+    label: 'தமிழ்',
+    voiceKeywords: ['tamil', 'ta-in', 'ta_in', 'india tamil'],
+    ttsRate: 0.9,
+    ttsPitch: 1.0,
+    noSpeechMessage: 'பேச்சு கண்டறியப்படவில்லை. மீண்டும் முயற்சிக்கவும்.',
+    permissionDeniedMessage: 'மைக்ரோஃபோன் அனுமதி மறுக்கப்பட்டது. URL பட்டியில் அனுமதி கொடுக்கவும்.',
+    ttsFailMessage: 'தமிழ் குரல் இந்த சாதனத்தில் கிடைக்கவில்லை.',
+    listeningLabel: 'கேட்கிறேன்...',
+    processingLabel: 'புரிந்துகொள்கிறேன்...',
+    respondingLabel: 'பதில் சொல்கிறேன்...',
+    errorLabel: 'மீண்டும் முயற்சிக்கவும்',
+    idleLabel: 'பேச தட்டவும்'
+  },
+  'en-IN': {
+    name: 'English',
+    label: 'English',
+    voiceKeywords: ['english', 'en-in', 'en_in', 'india'],
+    ttsRate: 0.95,
+    ttsPitch: 1.0,
+    noSpeechMessage: 'No speech detected. Please tap the microphone and speak again.',
+    permissionDeniedMessage: 'Microphone permission denied. Click the lock icon in your browser URL bar.',
+    ttsFailMessage: 'Voice response is currently unavailable. Please try again.',
+    listeningLabel: 'Listening...',
+    processingLabel: 'Processing...',
+    respondingLabel: 'Responding...',
+    errorLabel: 'Try Again',
+    idleLabel: 'Tap to speak'
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────
+// Structured debug logger
+// ─────────────────────────────────────────────────────────────────
+const DEBUG = import.meta.env.DEV !== false; // always true in dev, false in prod build
+
+function log(tag, message, data) {
+  if (!DEBUG) return;
+  const prefix = `%c[${tag}]`;
+  const style = {
+    VOICE:    'color:#6366f1;font-weight:bold',
+    STT:      'color:#059669;font-weight:bold',
+    TTS:      'color:#d97706;font-weight:bold',
+    LANGUAGE: 'color:#7c3aed;font-weight:bold',
+    AI:       'color:#0ea5e9;font-weight:bold',
+    ERROR:    'color:#dc2626;font-weight:bold'
+  }[tag] || 'color:#64748b;font-weight:bold';
+
+  if (data !== undefined) {
+    console.log(prefix, style, message, data);
+  } else {
+    console.log(prefix, style, message);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Resolve language code to a safe BCP-47 string (ONLY en-IN and ta-IN)
+// ─────────────────────────────────────────────────────────────────
+export function resolveLanguageCode(lang) {
+  if (!lang) return 'en-IN';
+  const bare = lang.trim();
+  if (bare === 'ta' || bare === 'ta-IN') return 'ta-IN';
+  return 'en-IN';
+}
+
+// ─────────────────────────────────────────────────────────────────
+// TTS Voice Selection — Tamil-first strategy
+// Loads voices with retry on Chrome (voices load async)
+// ─────────────────────────────────────────────────────────────────
+function selectBestVoice(lang, voices) {
+  if (!voices || voices.length === 0) return null;
+
+  const targetLang = resolveLanguageCode(lang);
+  const config = LANGUAGE_CONFIG[targetLang];
+  const keywords = config?.voiceKeywords || [targetLang.split('-')[0].toLowerCase()];
+
+  log('TTS', `Selecting voice for lang=${targetLang}`, { available: voices.map(v => `${v.name} [${v.lang}]`) });
+
+  // 1. Exact BCP-47 match (e.g. ta-IN)
+  let voice = voices.find(v => v.lang.toLowerCase() === targetLang.toLowerCase());
+  if (voice) { log('TTS', `Voice selected (exact): ${voice.name} [${voice.lang}]`); return voice; }
+
+  // 2. Language-prefix match (e.g. "ta" prefix)
+  const prefix = targetLang.split('-')[0].toLowerCase();
+  voice = voices.find(v => v.lang.toLowerCase().startsWith(prefix + '-'));
+  if (voice) { log('TTS', `Voice selected (prefix ${prefix}-): ${voice.name} [${voice.lang}]`); return voice; }
+
+  // 3. Keyword scan in voice name/lang (for Tamil: "tamil", "ta_in", etc.)
+  voice = voices.find(v => keywords.some(kw => v.name.toLowerCase().includes(kw) || v.lang.toLowerCase().includes(kw)));
+  if (voice) { log('TTS', `Voice selected (keyword): ${voice.name} [${voice.lang}]`); return voice; }
+
+  // 4. If Tamil is requested and NO Tamil voice exists — do NOT fall back to English silently
+  if (targetLang === 'ta-IN') {
+    log('TTS', 'WARNING: No Tamil TTS voice found in browser. Tamil speech may sound incorrect.', {
+      requested: targetLang,
+      availableVoices: voices.map(v => `${v.name} [${v.lang}]`)
+    });
+    // Return null so the caller can decide — do NOT auto-select English voice for Tamil
+    return null;
+  }
+
+  // 5. For non-Tamil: best-effort English fallback
+  voice = voices.find(v => v.lang.includes('en-IN')) || voices.find(v => v.lang.includes('en'));
+  if (voice) { log('TTS', `Voice fallback (English): ${voice.name} [${voice.lang}]`); return voice; }
+
+  return null;
+}
+
+// Load voices with retry for Chrome async loading
+async function loadVoicesAsync(maxWaitMs = 2000) {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return [];
+
+  let voices = window.speechSynthesis.getVoices();
+  if (voices.length > 0) return voices;
+
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      resolve(window.speechSynthesis.getVoices());
+    }, maxWaitMs);
+
+    window.speechSynthesis.onvoiceschanged = () => {
+      clearTimeout(timeout);
+      resolve(window.speechSynthesis.getVoices());
+    };
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────
+// SpeechService Class
+// ─────────────────────────────────────────────────────────────────
 class SpeechService {
   constructor() {
     this.recognition = null;
     this.isListening = false;
-    this.currentLang = 'en-IN'; // Default speech recognition language
+    this.currentLang = 'en-IN';
     this.lastTranscribedText = '';
     this.hasDispatchedResult = false;
     this.mediaStream = null;
@@ -15,322 +151,430 @@ class SpeechService {
     this.analyser = null;
     this.dataArray = null;
 
+    // TTS audio element for external TTS providers (future use)
+    this._ttsAudio = null;
+
     this.initRecognition();
   }
 
-  /**
-   * Check if Web Speech API is supported in the current browser
-   */
+  // ──────────────────────────────────────────────────────────────
+  // Browser Support Check
+  // ──────────────────────────────────────────────────────────────
   isSupported() {
     if (typeof window === 'undefined') return false;
-    const isSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-    console.log('[VOICEMART Speech] SpeechRecognition browser support check:', isSupported);
-    return isSupported;
+    const supported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+    log('STT', `Browser SpeechRecognition support: ${supported}`);
+    return supported;
   }
 
-  /**
-   * Query microphone permission state using Permissions API
-   */
+  isTTSSupported() {
+    if (typeof window === 'undefined') return false;
+    return 'speechSynthesis' in window;
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Microphone Permission Check
+  // ──────────────────────────────────────────────────────────────
   async checkMicrophonePermission() {
-    if (typeof navigator === 'undefined' || !navigator.permissions) {
-      return 'unknown';
-    }
+    if (typeof navigator === 'undefined' || !navigator.permissions) return 'unknown';
     try {
-      const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
-      console.log('[VOICEMART Speech] microphone permission state:', permissionStatus.state);
-      permissionStatus.onchange = () => {
-        console.log('[VOICEMART Speech] microphone permission state changed to:', permissionStatus.state);
-      };
-      return permissionStatus.state;
+      const status = await navigator.permissions.query({ name: 'microphone' });
+      log('VOICE', `Microphone permission state: ${status.state}`);
+      status.onchange = () => log('VOICE', `Microphone permission changed to: ${status.state}`);
+      return status.state;
     } catch (e) {
-      console.log('[VOICEMART Speech] Permissions API microphone query not available, state: prompt/unknown');
+      log('VOICE', 'Permissions API not available — assuming prompt state');
       return 'prompt';
     }
   }
 
-  /**
-   * Initialize or re-initialize SpeechRecognition instance
-   */
-  initRecognition() {
+  // ──────────────────────────────────────────────────────────────
+  // Get UI labels for current language
+  // ──────────────────────────────────────────────────────────────
+  getLanguageLabels(langCode) {
+    return LANGUAGE_CONFIG[langCode] || LANGUAGE_CONFIG['en-IN'];
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Initialize SpeechRecognition for a specific language
+  // IMPORTANT: continuous=false + interimResults=true is most reliable for Tamil
+  // continuous=true causes Tamil to loop or cut off in Chrome
+  // ──────────────────────────────────────────────────────────────
+  initRecognition(lang = 'en-IN') {
     if (typeof window === 'undefined') return;
     const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
-
     if (!SpeechRecognitionClass) {
-      console.warn('[VOICEMART Speech] Web Speech API (SpeechRecognition / webkitSpeechRecognition) is not supported in this browser.');
+      console.warn('[STT] Web Speech API not supported in this browser.');
       return;
     }
 
     try {
-      // Clean up previous instance if any
       if (this.recognition) {
-        try {
-          this.recognition.abort();
-        } catch (e) {}
+        try { this.recognition.abort(); } catch (e) {}
+        this.recognition = null;
       }
 
+      const targetLang = resolveLanguageCode(lang);
       this.recognition = new SpeechRecognitionClass();
-      this.recognition.continuous = true; // Use continuous so natural speech pauses do not prematurely trigger no-speech
-      this.recognition.interimResults = true; // Real-time feedback as user speaks
-      this.recognition.maxAlternatives = 1;
-      this.recognition.lang = this.currentLang || 'en-IN';
-      console.log('[VOICEMART Speech] SpeechRecognition initialized with lang:', this.recognition.lang);
+
+      // ── CRITICAL FIX: continuous=false is MORE reliable for Tamil STT ──
+      // continuous=true causes issues: Tamil recognition times out, sends empty results,
+      // or loops incorrectly. With continuous=false, Chrome correctly finalises Tamil.
+      this.recognition.continuous = false;
+      this.recognition.interimResults = true;   // show live Tamil text while speaking
+      this.recognition.maxAlternatives = 3;      // get more alternatives for better Tamil matching
+
+      // ── CRITICAL FIX: explicitly set the FULL BCP-47 code ta-IN, NOT just "ta" ──
+      this.recognition.lang = targetLang;
+      this.currentLang = targetLang;
+
+      log('STT', `SpeechRecognition initialised`, { lang: targetLang, continuous: false, interimResults: true });
     } catch (e) {
-      console.error('[VOICEMART Speech] SpeechRecognition initialization error:', e);
+      console.error('[STT] SpeechRecognition init error:', e);
     }
   }
 
-  /**
-   * Start Speech-to-Text Recognition
-   * Strictly started ONLY after direct user interaction (microphone button click)
-   */
-  async startListening({
-    lang = 'en-IN',
-    onStart,
-    onResult,
-    onInterim,
-    onError,
-    onEnd,
-    onStateChange
-  }) {
+  // ──────────────────────────────────────────────────────────────
+  // Start Listening
+  // ──────────────────────────────────────────────────────────────
+  async startListening({ lang = 'en-IN', onStart, onResult, onInterim, onError, onEnd, onStateChange } = {}) {
     if (typeof window === 'undefined') return;
 
-    console.log('[VOICEMART Speech] startListening requested with language:', lang);
+    const targetLang = resolveLanguageCode(lang);
+    log('VOICE', `startListening requested`, { selectedLanguage: targetLang });
+    log('STT', `Recognition requested for language: ${targetLang}`);
 
-    // Cancel ongoing speech synthesis to avoid acoustic feedback
+    // Stop any current speech synthesis to avoid acoustic feedback
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
 
-    // Prevent multiple instances from running concurrently
-    if (this.isListening) {
-      console.log('[VOICEMART Speech] Already listening. Stopping current session first.');
-      this.stopListening();
+    // Stop any current TTS audio element
+    if (this._ttsAudio) {
+      try { this._ttsAudio.pause(); this._ttsAudio.currentTime = 0; } catch (e) {}
     }
 
-    // Check permission state in console
-    await this.checkMicrophonePermission();
+    // Prevent multiple concurrent sessions
+    if (this.isListening) {
+      log('STT', 'Already listening — stopping current session first');
+      this.stopListening();
+      await new Promise(r => setTimeout(r, 150));
+    }
+
+    // Check microphone permission
+    const permState = await this.checkMicrophonePermission();
+    if (permState === 'denied') {
+      const labels = this.getLanguageLabels(targetLang);
+      if (onError) onError({ code: 'not-allowed', message: labels.permissionDeniedMessage });
+      if (onStateChange) onStateChange('error');
+      return;
+    }
 
     if (!this.isSupported()) {
-      const errorMsg = 'Speech recognition is not supported in this browser. Please open in Google Chrome or Microsoft Edge.';
-      console.error('[VOICEMART Speech] recognition error: browser not supported');
-      if (onError) onError({ code: 'browser-not-supported', message: errorMsg });
+      const msg = 'Speech recognition is not supported. Please use Google Chrome or Microsoft Edge.';
+      log('ERROR', msg);
+      if (onError) onError({ code: 'browser-not-supported', message: msg });
       if (onStateChange) onStateChange('error');
       return;
     }
 
-    // Resolve BCP-47 Language Tag (Default: en-IN)
-    let targetLang = lang;
-    if (!targetLang || targetLang === 'auto') {
-      targetLang = 'en-IN'; // Requirement 5: Default speech recognition language is en-IN
-    }
-    this.currentLang = targetLang;
-
-    // Fresh initialization to clear any stale internal browser recognition state
-    this.initRecognition();
+    // Re-initialise recognition with the correct target language
+    this.initRecognition(targetLang);
 
     if (!this.recognition) {
-      const errorMsg = 'Unable to initialize SpeechRecognition instance.';
-      console.error('[VOICEMART Speech] recognition error: instance null');
-      if (onError) onError({ code: 'init-failed', message: errorMsg });
+      const msg = 'Unable to initialise SpeechRecognition.';
+      log('ERROR', msg);
+      if (onError) onError({ code: 'init-failed', message: msg });
       if (onStateChange) onStateChange('error');
       return;
     }
 
-    this.recognition.lang = targetLang;
     this.lastTranscribedText = '';
     this.hasDispatchedResult = false;
 
-    // Recognition Lifecycle Handlers
+    // ── STT Event Handlers ──────────────────────────────────────
+
     this.recognition.onstart = () => {
       this.isListening = true;
       this.lastTranscribedText = '';
       this.hasDispatchedResult = false;
-      console.log('[VOICEMART Speech] recognition started, language:', targetLang);
+      log('STT', `Recognition started`, { language: targetLang });
       if (onStart) onStart();
       if (onStateChange) onStateChange('listening');
     };
 
-    this.recognition.onaudiostart = () => {
-      console.log('[VOICEMART Speech] microphone stream started / audio capture active');
-    };
-
-    this.recognition.onsoundstart = () => {
-      console.log('[VOICEMART Speech] sound detected by browser microphone');
-    };
-
-    this.recognition.onspeechstart = () => {
-      console.log('[VOICEMART Speech] speech detected by recognition engine');
-    };
+    this.recognition.onaudiostart = () => log('STT', 'Microphone audio stream active');
+    this.recognition.onsoundstart = () => log('STT', 'Sound detected by microphone');
+    this.recognition.onspeechstart = () => log('STT', 'Speech detected by recognition engine');
 
     this.recognition.onresult = (event) => {
-      let interimTranscript = '';
-      let finalTranscript = '';
+      let interimText = '';
+      let finalText = '';
 
       for (let i = event.resultIndex; i < event.results.length; ++i) {
-        const item = event.results[i];
-        const text = item[0]?.transcript || '';
-        if (item.isFinal) {
-          finalTranscript += text;
+        const result = event.results[i];
+        // Use best alternative (index 0); could also check alternatives for Tamil ambiguity
+        const transcript = result[0]?.transcript || '';
+
+        if (result.isFinal) {
+          finalText += transcript;
         } else {
-          interimTranscript += text;
+          interimText += transcript;
         }
       }
 
-      const activeText = finalTranscript || interimTranscript;
-      if (activeText) {
-        this.lastTranscribedText = activeText.trim();
-        console.log('[VOICEMART Speech] recognition result received:', activeText.trim(), { isFinal: !!finalTranscript });
+      // Show interim Tamil text immediately
+      if (interimText) {
+        this.lastTranscribedText = interimText.trim();
+        log('STT', `Interim transcript: "${interimText.trim()}"`, { language: targetLang });
+        if (onInterim) onInterim(interimText.trim());
       }
 
-      if (interimTranscript && onInterim) {
-        onInterim(interimTranscript.trim());
-      }
-
-      // If final transcript reached
-      if (finalTranscript && finalTranscript.trim()) {
-        console.log('[VOICEMART Speech] transcript received (final):', finalTranscript.trim());
+      // Dispatch final transcript immediately when received
+      if (finalText && finalText.trim()) {
+        this.lastTranscribedText = finalText.trim();
+        log('STT', `Final transcript: "${finalText.trim()}"`, { language: targetLang });
+        log('LANGUAGE', `Detected/Selected language: ${targetLang}`);
         this.hasDispatchedResult = true;
-        if (onResult) {
-          onResult(finalTranscript.trim());
-        }
+        if (onResult) onResult(finalText.trim());
         if (onStateChange) onStateChange('success');
       }
     };
 
-    this.recognition.onspeechend = () => {
-      console.log('[VOICEMART Speech] speech ended / pause detected');
-    };
-
-    this.recognition.onsoundend = () => {
-      console.log('[VOICEMART Speech] sound ended');
-    };
-
-    this.recognition.onaudioend = () => {
-      console.log('[VOICEMART Speech] audio stream ended');
-    };
+    this.recognition.onspeechend = () => log('STT', 'Speech ended / natural pause detected');
+    this.recognition.onsoundend = () => log('STT', 'Sound ended');
+    this.recognition.onaudioend = () => log('STT', 'Audio stream ended');
 
     this.recognition.onerror = (event) => {
-      console.error('[VOICEMART Speech] recognition error:', event.error, event);
+      log('ERROR', `STT recognition error: ${event.error}`, event);
       this.isListening = false;
 
-      let userFacingError = null;
+      const labels = this.getLanguageLabels(targetLang);
+      let userError = null;
 
       switch (event.error) {
         case 'not-allowed':
         case 'permission-denied':
-          userFacingError = {
-            code: 'not-allowed',
-            message: 'Microphone permission was denied. Please click the camera/microphone icon in your browser URL bar to allow microphone access.'
-          };
+          userError = { code: 'not-allowed', message: labels.permissionDeniedMessage };
           break;
+
         case 'no-speech':
-          // Requirement 7: Only show "No speech detected" if recognition ended without receiving any speech transcript
+          // If we have buffered text, dispatch it rather than showing an error
           if (this.lastTranscribedText && !this.hasDispatchedResult) {
-            console.log('[VOICEMART Speech] Dispatching accumulated transcript on no-speech event:', this.lastTranscribedText);
+            log('STT', `Dispatching buffered transcript on no-speech: "${this.lastTranscribedText}"`);
             this.hasDispatchedResult = true;
-            if (onResult) onResult(this.lastTranscribedText);
+            if (onResult) onResult(this.lastTranscribedText.trim());
             if (onStateChange) onStateChange('success');
             return;
           }
-          userFacingError = {
-            code: 'no-speech',
-            message: 'No speech detected. Please tap the microphone and speak again.'
-          };
+          userError = { code: 'no-speech', message: labels.noSpeechMessage };
           break;
+
         case 'audio-capture':
-          userFacingError = {
+          userError = {
             code: 'audio-capture',
-            message: 'No microphone was found or the microphone is currently in use by another application.'
+            message: 'No microphone found or microphone is in use by another application.'
           };
           break;
+
         case 'network':
-          userFacingError = {
+          userError = {
             code: 'network',
-            message: 'Speech recognition network error. Please check your internet connection or use text input.'
+            message: 'Speech recognition network error. Check internet or use text input.'
           };
           break;
+
         case 'aborted':
-          console.log('[VOICEMART Speech] Recognition was aborted by user or session reset.');
-          userFacingError = null; // Do not treat voluntary abort as an error banner
+          log('STT', 'Recognition aborted (voluntary)');
+          userError = null; // Not an error shown to user
           break;
+
         case 'service-not-allowed':
-          userFacingError = {
+          userError = {
             code: 'service-not-allowed',
-            message: 'Speech recognition service is disabled or not allowed on this device network.'
+            message: 'Speech recognition service is not allowed on this device or network.'
           };
           break;
+
         default:
-          userFacingError = {
-            code: event.error,
-            message: `Voice input notice: ${event.error}`
-          };
-          break;
+          userError = { code: event.error, message: `Voice input issue: ${event.error}` };
       }
 
-      if (userFacingError) {
-        if (onError) onError(userFacingError);
+      if (userError) {
+        if (onError) onError(userError);
         if (onStateChange) onStateChange('error');
       }
     };
 
     this.recognition.onend = () => {
-      console.log('[VOICEMART Speech] recognition ended');
+      log('STT', 'Recognition session ended');
       this.isListening = false;
 
-      // Requirement 7: If recognition ended with an uncommitted transcript, dispatch it cleanly instead of error
+      // Dispatch any uncommitted buffered transcript
       if (this.lastTranscribedText && this.lastTranscribedText.trim() && !this.hasDispatchedResult) {
-        console.log('[VOICEMART Speech] Dispatching buffered transcript on recognition end:', this.lastTranscribedText);
+        log('STT', `Dispatching buffered transcript on session end: "${this.lastTranscribedText.trim()}"`);
         this.hasDispatchedResult = true;
-        if (onResult) {
-          onResult(this.lastTranscribedText.trim());
-        }
+        if (onResult) onResult(this.lastTranscribedText.trim());
         if (onStateChange) onStateChange('success');
       }
 
       if (onEnd) onEnd();
     };
 
-    // Synchronous start call directly in user gesture context
+    // ── Start Recognition ────────────────────────────────────────
     try {
       this.recognition.start();
-      console.log('[VOICEMART Speech] recognition.start() called successfully');
+      log('STT', `recognition.start() called`, { language: targetLang });
     } catch (err) {
-      console.error('[VOICEMART Speech] recognition start exception:', err);
+      log('ERROR', `recognition.start() exception: ${err.name}`, err);
       if (err.name === 'InvalidStateError') {
-        // Recognition already started in background; restart cleanly
+        // Already started — abort and retry
         try {
           this.recognition.abort();
-          setTimeout(() => {
-            try { this.recognition.start(); } catch (e) {}
-          }, 60);
+          await new Promise(r => setTimeout(r, 80));
+          try { this.recognition.start(); } catch (e2) { log('ERROR', 'Retry start failed', e2); }
         } catch (e) {}
-      } else if (onError) {
-        onError({ code: 'start-error', message: err.message || 'Failed to start microphone.' });
+      } else {
+        if (onError) onError({ code: 'start-error', message: err.message || 'Failed to start microphone.' });
         if (onStateChange) onStateChange('error');
       }
     }
   }
 
-  /**
-   * Stop Speech-to-Text Recognition
-   */
+  // ──────────────────────────────────────────────────────────────
+  // Stop Listening
+  // ──────────────────────────────────────────────────────────────
   stopListening() {
-    console.log('[VOICEMART Speech] stopListening() called');
+    log('STT', 'stopListening() called');
     if (this.recognition && this.isListening) {
-      try {
-        this.recognition.stop();
-      } catch (e) {
-        try {
-          this.recognition.abort();
-        } catch (err) {}
-      }
+      try { this.recognition.stop(); }
+      catch (e) { try { this.recognition.abort(); } catch (err) {} }
     }
     this.isListening = false;
   }
 
-  /**
-   * Requirement 17: Separate Audio Recording via MediaRecorder API
-   */
+  // ──────────────────────────────────────────────────────────────
+  // TTS — Speak with Tamil-first voice selection
+  // ──────────────────────────────────────────────────────────────
+  async speak(text, { lang = 'en-IN', onStart, onEnd, onError } = {}) {
+    if (!this.isTTSSupported()) {
+      log('ERROR', 'Speech synthesis not supported in this browser');
+      if (onError) onError('Speech synthesis not supported');
+      return;
+    }
+
+    const targetLang = resolveLanguageCode(lang);
+    const config = LANGUAGE_CONFIG[targetLang] || LANGUAGE_CONFIG['en-IN'];
+
+    log('TTS', `speak() requested`, { language: targetLang, textLength: text?.length });
+    log('TTS', `Text: "${text?.substring(0, 80)}${text?.length > 80 ? '...' : ''}"`);
+
+    // Cancel any currently speaking utterance
+    window.speechSynthesis.cancel();
+    if (this._ttsAudio) {
+      try { this._ttsAudio.pause(); this._ttsAudio.currentTime = 0; } catch (e) {}
+    }
+
+    if (!text || !text.trim()) {
+      log('TTS', 'Empty text — skipping TTS');
+      if (onEnd) onEnd();
+      return;
+    }
+
+    // Load voices (Chrome loads voices asynchronously)
+    const voices = await loadVoicesAsync(1500);
+    log('TTS', `Available voices count: ${voices.length}`);
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = targetLang;
+    utterance.rate = config.ttsRate;
+    utterance.pitch = config.ttsPitch;
+
+    const selectedVoice = selectBestVoice(targetLang, voices);
+
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+      log('TTS', `Voice assigned: ${selectedVoice.name} [${selectedVoice.lang}]`);
+    } else if (targetLang === 'ta-IN') {
+      // No Tamil voice found — still attempt with lang set correctly
+      // Browser may use a built-in Tamil engine even without a named voice
+      log('TTS', 'No named Tamil voice found — using default Tamil engine if available', {
+        language: targetLang,
+        text: text.substring(0, 60),
+        provider: 'Web Speech API',
+        note: 'Browser may use system Tamil voice'
+      });
+      // DO NOT reassign utterance.lang — keep it as ta-IN
+      // DO NOT fall back to English voice
+    }
+
+    log('TTS', `Requested language: ${targetLang}`, { voice: selectedVoice?.name || 'default', rate: utterance.rate });
+
+    utterance.onstart = () => {
+      log('TTS', 'Playback started', { language: targetLang, voice: utterance.voice?.name });
+      if (onStart) onStart();
+    };
+
+    utterance.onend = () => {
+      log('TTS', 'Playback completed');
+      if (onEnd) onEnd();
+    };
+
+    utterance.onerror = (e) => {
+      log('ERROR', `TTS utterance error`, {
+        language: targetLang,
+        text: text.substring(0, 60),
+        voice: selectedVoice?.name,
+        provider: 'Web Speech API',
+        error: e.error || e
+      });
+
+      // For Tamil TTS errors: show Tamil error message, do NOT switch to English
+      if (targetLang === 'ta-IN' && e.error !== 'interrupted') {
+        log('TTS', config.ttsFailMessage);
+        // Fire onError with Tamil message so UI can display it
+        if (onError) onError({
+          code: 'tts-tamil-failed',
+          message: config.ttsFailMessage,
+          language: targetLang
+        });
+      } else {
+        if (onError) onError(e);
+      }
+      if (onEnd) onEnd();
+    };
+
+    // Handle Chrome speechSynthesis bug: sometimes doesn't start
+    // Fix: use a small timeout if synthesis gets stuck
+    const speakWithFallback = () => {
+      window.speechSynthesis.speak(utterance);
+      log('TTS', 'Audio generated — speak() called on Web Speech API');
+
+      // Chrome workaround: if synthesis is paused due to page visibility, resume it
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+    };
+
+    speakWithFallback();
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Stop Speaking
+  // ──────────────────────────────────────────────────────────────
+  stopSpeaking() {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      log('TTS', 'Speech synthesis cancelled');
+    }
+    if (this._ttsAudio) {
+      try { this._ttsAudio.pause(); this._ttsAudio.currentTime = 0; } catch (e) {}
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // MediaRecorder — Separate Audio Recording (unchanged from original)
+  // ──────────────────────────────────────────────────────────────
   async startAudioRecording({ onStart, onDataAvailable, onError } = {}) {
     if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       if (onError) onError('MediaDevices getUserMedia is not supported in this browser.');
@@ -339,7 +583,7 @@ class SpeechService {
 
     try {
       this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log('[VOICEMART Speech] MediaRecorder audio stream started');
+      log('VOICE', 'MediaRecorder audio stream started');
 
       const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
       this.mediaRecorder = new MediaRecorder(this.mediaStream, { mimeType });
@@ -352,19 +596,16 @@ class SpeechService {
         }
       };
 
-      this.mediaRecorder.start(250); // Collect 250ms audio slices
+      this.mediaRecorder.start(250);
       if (onStart) onStart();
       return this.mediaRecorder;
     } catch (e) {
-      console.error('[VOICEMART Speech] MediaRecorder audio recording start error:', e);
+      log('ERROR', 'MediaRecorder start error', e);
       if (onError) onError(e.message || 'Microphone recording failed.');
       return null;
     }
   }
 
-  /**
-   * Stop Audio Recording and return audio Blob
-   */
   async stopAudioRecording() {
     return new Promise((resolve) => {
       if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') {
@@ -374,7 +615,7 @@ class SpeechService {
 
       this.mediaRecorder.onstop = () => {
         const audioBlob = new Blob(this.recordedAudioChunks, { type: this.mediaRecorder.mimeType || 'audio/webm' });
-        console.log('[VOICEMART Speech] Audio recording complete. Blob size:', audioBlob.size, 'bytes');
+        log('VOICE', `Audio recording complete`, { blobSize: audioBlob.size });
         if (this.mediaStream) {
           this.mediaStream.getTracks().forEach(track => track.stop());
           this.mediaStream = null;
@@ -386,62 +627,22 @@ class SpeechService {
     });
   }
 
-  /**
-   * Synthesize Spoken Audio Output (TTS)
-   */
-  speak(text, { lang = 'en-IN', onStart, onEnd, onError } = {}) {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      if (onError) onError('Speech synthesis not supported');
-      return;
+  // ──────────────────────────────────────────────────────────────
+  // Cleanup — call on component unmount
+  // ──────────────────────────────────────────────────────────────
+  cleanup() {
+    log('VOICE', 'Cleaning up speech service resources');
+    this.stopListening();
+    this.stopSpeaking();
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach(t => t.stop());
+      this.mediaStream = null;
     }
-
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
-
-    if (!text || !text.trim()) return;
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang || 'en-IN';
-    utterance.rate = 0.95; // Clear natural cadence
-    utterance.pitch = 1.0;
-
-    // Voice selection preference
-    try {
-      const voices = window.speechSynthesis.getVoices();
-      if (voices && voices.length > 0) {
-        const langPrefix = (lang || 'en').split('-')[0].toLowerCase();
-        const matchedVoice = voices.find(v => v.lang.toLowerCase().startsWith(langPrefix)) ||
-          voices.find(v => v.lang.includes('en-IN')) ||
-          voices.find(v => v.lang.includes('en-US'));
-
-        if (matchedVoice) {
-          utterance.voice = matchedVoice;
-        }
-      }
-    } catch (e) {}
-
-    utterance.onstart = () => {
-      if (onStart) onStart();
-    };
-
-    utterance.onend = () => {
-      if (onEnd) onEnd();
-    };
-
-    utterance.onerror = (e) => {
-      console.warn('[VOICEMART Speech] TTS utterance error:', e);
-      if (onError) onError(e);
-      if (onEnd) onEnd();
-    };
-
-    window.speechSynthesis.speak(utterance);
-  }
-
-  stopSpeaking() {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
+    this.mediaRecorder = null;
+    this.recordedAudioChunks = [];
   }
 }
 
 export const speechService = new SpeechService();
+
+// LANGUAGE_CONFIG and resolveLanguageCode are already exported above as named exports.

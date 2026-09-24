@@ -5,13 +5,8 @@ import {
 } from 'lucide-react';
 
 const LANGUAGES = [
-  { code: 'auto', name: 'Auto Detect Language', label: 'Auto Detect', flag: '✨' },
-  { code: 'ta-IN', name: 'Tamil', label: 'தமிழ்', flag: '🇮🇳' },
-  { code: 'en-IN', name: 'English', label: 'English', flag: '🌐' },
-  { code: 'hi-IN', name: 'Hindi', label: 'हिन्दी', flag: '🇮🇳' },
-  { code: 'te-IN', name: 'Telugu', label: 'తెలుగు', flag: '🇮🇳' },
-  { code: 'ml-IN', name: 'Malayalam', label: 'മലയാളം', flag: '🇮🇳' },
-  { code: 'kn-IN', name: 'Kannada', label: 'ಕನ್ನಡ', flag: '🇮🇳' }
+  { code: 'en-IN', name: 'English', label: 'English', flag: '🇮🇳' },
+  { code: 'ta-IN', name: 'Tamil', label: 'தமிழ்', flag: '🇮🇳' }
 ];
 
 const VIEW_TITLES = {
@@ -22,7 +17,7 @@ const VIEW_TITLES = {
   'inventory': { title: 'Inventory Management', subtitle: 'Real-time catalog stock management, SKU pricing, and CRUD controls' },
   'services': { title: 'Store Services & FAQ', subtitle: 'Business hours, delivery radius, return policies, and UPI payments' },
   'demand': { title: 'Demand Intelligence', subtitle: 'Unmet demand detection, demand score ranking, and inventory trend signals' },
-  'dataset': { title: '12,491 Product Dataset', subtitle: 'Source of truth catalog explorer, validation health, and custom CSV ingestion' },
+  'dataset': { title: 'Datasets & Catalog Intelligence', subtitle: 'Customer purchase transaction records, product catalog explorer, and CSV ingestion' },
   'how-it-thinks': { title: 'How VOICEMART Thinks', subtitle: 'AI speech understanding layer vs deterministic business decision engine' },
   'architecture': { title: '7-Step Architecture Pipeline', subtitle: 'Technical data flow from microphone acoustic stream to verified audio synthesis' },
   'settings': { title: 'Store Settings & Policies', subtitle: 'Configure business profile, working hours, and voice agent policies' }

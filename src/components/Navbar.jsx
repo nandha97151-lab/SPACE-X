@@ -6,13 +6,8 @@ import {
 } from 'lucide-react';
 
 const LANGUAGES = [
-  { code: 'auto', name: 'Auto Detect Language', label: 'Auto Detect', flag: '✨' },
-  { code: 'ta-IN', name: 'Tamil', label: 'தமிழ்', flag: '🇮🇳' },
-  { code: 'en-IN', name: 'English', label: 'English', flag: '🌐' },
-  { code: 'hi-IN', name: 'Hindi', label: 'हिन्दी', flag: '🇮🇳' },
-  { code: 'te-IN', name: 'Telugu', label: 'తెలుగు', flag: '🇮🇳' },
-  { code: 'ml-IN', name: 'Malayalam', label: 'മലയാളം', flag: '🇮🇳' },
-  { code: 'kn-IN', name: 'Kannada', label: 'ಕನ್ನಡ', flag: '🇮🇳' }
+  { code: 'en-IN', name: 'English', label: 'English', flag: '🇮🇳' },
+  { code: 'ta-IN', name: 'Tamil', label: 'தமிழ்', flag: '🇮🇳' }
 ];
 
 export function Navbar({

@@ -1,4 +1,5 @@
 // VOICEMART AI - 12,491 Product Dataset Ingestion, Normalization & Indexing Engine
+import { customerPurchaseStore } from './customerPurchaseService.js';
 
 // Deterministic Category Derivation Helper
 export function deriveCategory(productName = '', description = '') {
@@ -173,8 +174,10 @@ class DatasetStore {
 
   init() {
     if (this.products.length === 0) {
-      console.log('Ingesting 12,491 product catalog dataset...');
-      this.products = generateSeedDataset(12491);
+      console.log('Ingesting 12,491 product catalog dataset and customer purchases dataset...');
+      const seedProducts = generateSeedDataset(12491);
+      const customerProducts = customerPurchaseStore.toProductCatalog();
+      this.products = [...customerProducts, ...seedProducts];
       this.isLoaded = true;
       this.calculateStats();
     }
@@ -239,7 +242,7 @@ class DatasetStore {
   }
 
   /**
-   * Ingest raw CSV string from user upload
+   * Ingest raw CSV string from user upload (Supports both Product Catalog and Customer Purchases CSV schemas)
    */
   ingestCSV(csvText) {
     if (!csvText || typeof csvText !== 'string') return { success: false, error: 'Empty CSV content' };
@@ -247,6 +250,27 @@ class DatasetStore {
     const lines = csvText.split('\n').map(l => l.trim()).filter(Boolean);
     if (lines.length < 2) return { success: false, error: 'CSV must contain headers and at least one data row' };
 
+    const headerLine = lines[0].toLowerCase();
+
+    // 1. Detect Customer Purchases Dataset (Customer Reference ID, Item Purchased, Purchase Amount...)
+    if (headerLine.includes('customer') || headerLine.includes('item purchased') || headerLine.includes('purchase amount')) {
+      const custRes = customerPurchaseStore.ingestCustomerCSV(csvText);
+      if (custRes.success) {
+        const newCatalogItems = customerPurchaseStore.toProductCatalog();
+        this.products = [...newCatalogItems, ...this.products.filter(p => !p.ProductID.startsWith('CP-'))];
+        this.calculateStats();
+        this.health = {
+          totalRows: lines.length - 1,
+          validRows: custRes.count,
+          reviewRows: 0,
+          schemaStatus: 'Customer Purchases Dataset Active (Customer Reference ID, Item Purchased, Amount, Date, Rating, Payment Method)'
+        };
+        return { success: true, count: custRes.count, datasetType: 'customerPurchases' };
+      }
+      return custRes;
+    }
+
+    // 2. Default: Standard Product Catalog Dataset
     const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
     
     const parsedProducts = [];
@@ -296,9 +320,9 @@ class DatasetStore {
         totalRows: lines.length - 1,
         validRows: parsedProducts.length,
         reviewRows: reviewCount,
-        schemaStatus: 'User Ingested Dataset Active'
+        schemaStatus: 'Product Catalog Dataset Ingested'
       };
-      return { success: true, count: parsedProducts.length, reviewCount };
+      return { success: true, count: parsedProducts.length, reviewCount, datasetType: 'productCatalog' };
     }
 
     return { success: false, error: 'Could not parse any valid product rows from CSV' };

@@ -52,7 +52,7 @@ export function BusinessDashboard({
 
         <div className="flex items-center gap-3">
           <div className="px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold font-mono">
-            ● Voice Agent Online (6 Languages)
+            ● Voice Agent Online (Tamil & English)
           </div>
         </div>
       </div>

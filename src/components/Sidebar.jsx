@@ -40,7 +40,7 @@ export function Sidebar({
       label: 'BUSINESS INTELLIGENCE',
       items: [
         { id: 'demand', label: 'Demand Intelligence', icon: Target, badge: 'Live Signals', badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-        { id: 'dataset', label: '12,491 Dataset', icon: Database, badge: null }
+        { id: 'dataset', label: 'Datasets & Catalog', icon: Database, badge: 'Updated', badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
       ]
     },
     {

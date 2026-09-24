@@ -1,0 +1,101 @@
+Customer Reference ID,Item Purchased,Purchase Amount (USD),Date Purchase,Review Rating,Payment Method
+4018,Handbag,4619.0,2023-02-05,,Credit Card
+4115,Tunic,2456.0,2023-07-11,2.0,Credit Card
+4019,Tank Top,2102.0,2023-03-23,4.1,Cash
+4097,Leggings,3126.0,2023-03-15,3.2,Cash
+3997,Wallet,3003.0,2022-11-27,4.7,Cash
+4080,Onesie,2914.0,2022-12-11,4.5,Credit Card
+4055,Jacket,2571.0,2023-07-08,1.3,Cash
+3973,Trousers,2419.0,2022-11-10,4.6,Cash
+4044,Jeans,4771.0,2023-05-19,4.1,Cash
+4010,Loafers,4233.0,2023-06-11,,Credit Card
+4108,Slippers,2356.0,2023-03-19,4.8,Credit Card
+4067,Bowtie,4418.0,2022-11-21,3.4,Cash
+4068,Pajamas,3728.0,2022-12-09,,Credit Card
+4102,Trench Coat,2130.0,2023-01-29,4.8,Cash
+4044,Handbag,2122.0,2023-08-01,1.2,Credit Card
+4096,Poncho,2383.0,2023-04-10,,Credit Card
+4017,Gloves,2895.0,2023-07-17,3.6,Credit Card
+4001,Trench Coat,2952.0,2023-06-13,2.2,Cash
+3976,Slippers,4069.0,2023-06-18,4.9,Credit Card
+4103,Romper,4465.0,2022-11-21,,Credit Card
+4081,T-shirt,2108.0,2023-03-25,,Cash
+3986,Gloves,4298.0,2023-04-05,4.2,Cash
+4108,Jeans,2814.0,2023-02-11,4.4,Credit Card
+4109,Flip-Flops,4932.0,2022-12-20,4.0,Credit Card
+4075,Tunic,4661.0,2023-04-12,1.2,Credit Card
+4040,Shorts,4872.0,2023-08-25,3.8,Cash
+4099,Blazer,4232.0,2022-10-25,2.7,Credit Card
+3981,Boots,3718.0,2023-09-10,2.8,Credit Card
+4070,Poncho,2902.0,2023-08-04,4.9,Cash
+4002,Belt,3839.0,2023-05-26,1.8,Cash
+4035,Tunic,4413.0,2022-12-23,1.2,Credit Card
+4060,Boots,3139.0,2023-01-26,3.4,Credit Card
+3974,Flip-Flops,2026.0,2023-04-16,4.0,Cash
+4110,Hoodie,2653.0,2022-10-11,4.2,Credit Card
+3984,Sweater,4859.0,2022-12-19,5.0,Cash
+4109,Blouse,3731.0,2023-03-02,,Credit Card
+4054,Swimsuit,3393.0,2023-02-28,4.3,Cash
+4040,Kimono,3138.0,2023-05-12,,Credit Card
+4083,Cardigan,2636.0,2023-04-09,1.7,Cash
+4122,Socks,2881.0,2023-02-22,,Credit Card
+3972,Pants,3378.0,2023-05-06,3.6,Cash
+3980,Pajamas,2418.0,2023-05-26,2.2,Credit Card
+4012,Scarf,2379.0,2023-05-29,2.9,Credit Card
+3992,Backpack,101.0,2022-12-13,1.3,Credit Card
+4105,Dress,164.0,2022-10-20,3.2,Credit Card
+4119,Boots,21.0,2023-04-03,3.9,Cash
+3957,Camisole,147.0,2022-11-04,4.7,Cash
+3994,Loafers,,2023-05-16,3.9,Cash
+3995,Bowtie,30.0,2022-11-23,4.1,Cash
+4072,Poncho,170.0,2022-10-15,3.6,Credit Card
+4093,Trousers,102.0,2023-05-25,2.1,Cash
+4031,Blouse,190.0,2023-01-14,3.0,Cash
+4056,Sneakers,,2022-11-02,,Credit Card
+4114,Leggings,84.0,2023-06-15,3.8,Cash
+4104,Backpack,69.0,2023-05-27,2.1,Cash
+4071,Tunic,107.0,2022-12-03,1.5,Cash
+4007,Dress,172.0,2023-04-05,1.9,Cash
+4009,Flannel Shirt,51.0,2023-04-16,1.8,Cash
+4038,Tie,63.0,2023-02-13,4.3,Cash
+4033,Backpack,189.0,2023-08-31,4.9,Cash
+4102,Cardigan,175.0,2023-06-05,3.6,Credit Card
+4034,Tunic,,2023-07-01,1.5,Credit Card
+4068,Jeans,146.0,2023-08-26,1.1,Cash
+4045,Gloves,51.0,2023-01-27,2.5,Credit Card
+3979,Camisole,79.0,2023-06-05,1.3,Cash
+4106,Trousers,173.0,2023-09-07,3.4,Credit Card
+3959,Trousers,66.0,2022-11-02,4.5,Cash
+4113,Boots,24.0,2023-01-20,1.2,Credit Card
+4087,Scarf,18.0,2022-11-21,1.7,Credit Card
+4060,Polo Shirt,112.0,2023-06-08,1.2,Cash
+3989,Sweater,64.0,2023-03-13,3.2,Credit Card
+4032,Wallet,155.0,2023-03-08,1.1,Credit Card
+3972,Boots,90.0,2023-01-26,4.6,Credit Card
+4051,Umbrella,137.0,2023-06-30,4.6,Cash
+4097,Tank Top,174.0,2022-10-10,3.4,Cash
+3970,Camisole,77.0,2023-01-05,2.4,Cash
+3957,Gloves,,2023-05-16,2.7,Cash
+4100,Loafers,147.0,2023-03-02,3.9,Credit Card
+4048,Pajamas,159.0,2022-11-08,1.2,Credit Card
+3985,Flannel Shirt,159.0,2023-03-05,2.6,Cash
+4029,Leggings,66.0,2023-06-16,3.7,Cash
+3964,Hat,45.0,2023-03-17,4.8,Cash
+4017,Bowtie,33.0,2023-09-28,3.3,Credit Card
+4067,Handbag,38.0,2023-05-25,3.1,Cash
+4108,T-shirt,,2023-09-10,2.5,Credit Card
+4057,Jacket,,2023-01-02,4.7,Cash
+4117,Kimono,162.0,2023-04-16,1.1,Cash
+4038,Jacket,,2022-10-27,4.8,Credit Card
+4054,Socks,129.0,2022-12-23,,Cash
+4060,Sweater,151.0,2023-07-17,3.2,Cash
+4054,Handbag,12.0,2022-12-29,2.6,Credit Card
+4068,Pants,39.0,2023-03-21,2.4,Credit Card
+4096,Scarf,147.0,2023-02-11,4.1,Credit Card
+4011,Blouse,174.0,2023-04-21,3.4,Cash
+4001,Hoodie,85.0,2023-09-17,3.3,Cash
+4078,Hat,126.0,2023-06-29,2.1,Credit Card
+3992,Slippers,,2023-04-26,2.9,Cash
+4005,Sun Hat,194.0,2022-12-16,2.9,Credit Card
+4099,Scarf,138.0,2023-05-20,2.9,Credit Card
+4055,Boots,139.0,2023-01-05,1.9,Credit Card

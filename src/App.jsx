@@ -22,16 +22,29 @@ import { CustomerProfileModal } from './components/CustomerProfileModal';
 import { CartDrawer } from './components/CartDrawer';
 import { Toast } from './components/Toast';
 
+import { ProductResults } from './components/ProductResults';
+import { ConversationPanel } from './components/ConversationPanel';
+import { SearchIntent } from './components/SearchIntent';
+
 import { processVoiceQuery } from './services/nlpEngine';
 import { speechService } from './services/speechService';
+import { voiceService, LANGUAGES } from './services/voiceService';
 import { storageService } from './services/storageService';
 import { datasetStore } from './services/datasetService';
 import { searchProducts } from './services/searchEngine';
 
+const APP_DEBUG = import.meta.env.DEV !== false;
+function appLog(tag, msg, data) {
+  if (!APP_DEBUG) return;
+  const styles = { VOICE: 'color:#6366f1;font-weight:bold', TTS: 'color:#d97706;font-weight:bold', AI: 'color:#0ea5e9;font-weight:bold' };
+  const style = styles[tag] || 'color:#64748b;font-weight:bold';
+  data !== undefined ? console.log(`%c[${tag}]`, style, msg, data) : console.log(`%c[${tag}]`, style, msg);
+}
+
 export default function App() {
   // Navigation & View: 'home' | 'voice' | 'products' | 'orders' | 'inventory' | 'services' | 'demand' | 'dataset' | 'how-it-thinks' | 'architecture' | 'settings'
   const [activeView, setActiveView] = useState('home');
-  const [selectedLanguage, setSelectedLanguage] = useState('auto');
+  const [selectedLanguage, setSelectedLanguage] = useState('ta-IN');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Assistant & Speech States
@@ -121,20 +134,31 @@ export default function App() {
         setActiveVoiceOrder(result.orderData);
       }
 
-      setAssistantState('responding');
+      // ── Synthesize Tamil / English Spoken Audio Output ──
+      const responseLangCode = result.language?.code || selectedLanguage || 'ta-IN';
+      appLog('TTS', `Requested language: ${responseLangCode}`, {
+        voice: 'auto-select',
+        provider: 'Web Speech API',
+        textLength: result.speechText?.length
+      });
 
-      // Synthesize Spoken Audio Output
       setIsPlayingAudio(true);
-      speechService.speak(result.speechText, {
-        lang: result.language?.code || 'ta-IN',
-        onStart: () => setIsPlayingAudio(true),
+      voiceService.speak(result.speechText, responseLangCode, {
+        onStart: () => {
+          appLog('TTS', 'Playback started', { language: responseLangCode });
+          setIsPlayingAudio(true);
+        },
         onEnd: () => {
           setIsPlayingAudio(false);
           setAssistantState('idle');
         },
-        onError: () => {
+        onError: (err) => {
+          appLog('TTS', `TTS error for language ${responseLangCode}`, err);
           setIsPlayingAudio(false);
           setAssistantState('idle');
+        },
+        onNoTamilVoice: (warning) => {
+          setToast({ message: warning, type: 'warning' });
         }
       });
 
@@ -164,19 +188,21 @@ export default function App() {
     }
   };
 
-  // Trigger audio replay
+  // Trigger audio replay — langCode passed from result.language.code
   const handlePlayAudioText = (text, langCode = 'ta-IN') => {
     if (isPlayingAudio) {
-      speechService.stopSpeaking();
+      voiceService.stopSpeaking();
       setIsPlayingAudio(false);
       return;
     }
     setIsPlayingAudio(true);
-    speechService.speak(text, {
-      lang: langCode,
+    voiceService.speak(text, langCode, {
       onStart: () => setIsPlayingAudio(true),
       onEnd: () => setIsPlayingAudio(false),
-      onError: () => setIsPlayingAudio(false)
+      onError: () => setIsPlayingAudio(false),
+      onNoTamilVoice: (msg) => {
+        setToast({ message: msg, type: 'warning' });
+      }
     });
   };
 
@@ -325,22 +351,54 @@ export default function App() {
                 setAssistantState={setAssistantState}
                 onProcessQuery={handleProcessQuery}
                 currentLanguage={selectedLanguage}
+                onSelectLanguage={setSelectedLanguage}
                 interimTranscript={interimTranscript}
                 setInterimTranscript={setInterimTranscript}
                 lastAIResult={lastAIResult}
-                onPlayAudio={() => lastAIResult && handlePlayAudioText(lastAIResult.speechText, lastAIResult.language?.code)}
+                onPlayAudio={() => lastAIResult && handlePlayAudioText(lastAIResult.speechText, lastAIResult.language?.code || selectedLanguage)}
                 isPlayingAudio={isPlayingAudio}
               />
 
-              {/* AI Intent Inspector Breakdown */}
-              <AIIntentInspector lastAIResult={lastAIResult} />
+              {/* AI Intent & Search Parameters */}
+              {lastAIResult && (
+                <SearchIntent lastAIResult={lastAIResult} language={selectedLanguage} />
+              )}
 
-              {/* Live Conversation Stream */}
-              <ConversationFeed
+              {/* Live Conversation Stream Panel */}
+              <ConversationPanel
                 messages={conversationMessages}
+                isPlayingAudio={isPlayingAudio}
                 onPlayAudioText={handlePlayAudioText}
-                onFollowUpClick={(q) => handleProcessQuery(q)}
-                onOpenVoiceOrder={(data) => setActiveVoiceOrder(data)}
+                language={selectedLanguage}
+              />
+
+              {/* Dynamic Product & Business Results Displayed BELOW the Voice Conversation */}
+              <ProductResults
+                products={lastAIResult?.matchingProducts || activeFilterVoice || []}
+                businessInfo={lastAIResult?.businessInfo || (lastAIResult?.intent === 'BUSINESS_INFORMATION' ? businessProfile : null)}
+                query={lastAIResult?.query || ''}
+                language={selectedLanguage}
+                isLoading={assistantState === 'processing'}
+                onViewProduct={(p) => setActiveProductDetail(p)}
+                onAddToCart={handleAddToCart}
+                onAskAI={handleAskAIAboutProduct}
+                onVoiceOrderNow={(p) => setActiveVoiceOrder({
+                  product: {
+                    id: p.ProductID || p.id,
+                    name: p.ProductName || p.name,
+                    price: p.Price || p.price,
+                    brand: p.ProductBrand || p.brand,
+                    image: p.Image || p.image,
+                    category: p.Category || p.category,
+                    color: p.PrimaryColor || p.color,
+                    sizes: p.Category?.includes('Shoes') ? ['7', '8', '9', '10'] : ['S', 'M', 'L', 'XL']
+                  },
+                  size: p.Category?.includes('Shoes') ? '9' : 'M',
+                  quantity: 1,
+                  totalAmount: p.Price || p.price,
+                  orderCode: `VM${Math.floor(1000 + Math.random() * 9000)}`
+                })}
+                onViewBusiness={() => setActiveView('services')}
               />
             </div>
           )}
@@ -455,7 +513,7 @@ export default function App() {
             </div>
 
             <p className="font-medium text-slate-500 text-center">
-              "Speak Your Language. Find What You Need." • Supporting Tamil, Hindi, Telugu, Malayalam, Kannada & English
+              "Speak Your Language. Find What You Need." • Supporting Tamil (ta-IN) & English (en-IN)
             </p>
 
             <div className="flex items-center gap-3 text-slate-500">
